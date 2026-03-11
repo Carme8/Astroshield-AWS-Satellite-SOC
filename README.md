@@ -42,6 +42,7 @@ Monitoraggio in tempo reale del flusso **VITA-49.2** per identificare anomalie c
 In questa fase, la pipeline riceve dati in Banda X. Il segnale è autentico e i controlli di integrità sono superati.
 * **Dashboard:** Power Consumption stabile, Orbital Drift ~0.001°, Rischio Basso.
 
+<img width="1380" height="712" alt="Mission_Control_Nominal_State" src="https://github.com/user-attachments/assets/1716a8b5-9ec4-4321-a4c2-4fab3cab28ad" />
 
 
 https://github.com/user-attachments/assets/588707e7-d7ad-40b1-892e-e08336946bfa
@@ -90,10 +91,15 @@ https://github.com/user-attachments/assets/41a56c3b-e926-4d1c-8b4a-f1b454e671e8
 1. **Clone the Repo:**
    ```bash
    git clone [https://github.com/tuo-username/AstroShield-SOC.git](https://github.com/tuo-username/AstroShield-SOC.git)
-2. **Start the Telemetry Bridge:**
+2. **Lancia il Simulatore:**
+   ```bash
+   python telemetry_sim.py
+
+3. **Avvia il Bridge API:**
    ```bash
    python bridge.py
-3. **Launch Dashboard:**
+   
+4. **Lancia la Dashboard:**
    ```bash
    Apri index.html nel browser
    ```
