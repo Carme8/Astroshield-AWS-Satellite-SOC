@@ -91,14 +91,15 @@ https://github.com/user-attachments/assets/41a56c3b-e926-4d1c-8b4a-f1b454e671e8
 1. **Clone the Repo:**
    ```bash
    git clone [https://github.com/tuo-username/AstroShield-SOC.git](https://github.com/tuo-username/AstroShield-SOC.git)
+   ```
 2. **Lancia il Simulatore:**
    ```bash
    python telemetry_sim.py
-
+   ```
 3. **Avvia il Bridge API:**
    ```bash
    python bridge.py
-   
+   ```
 4. **Lancia la Dashboard:**
    ```bash
    Apri index.html nel browser
