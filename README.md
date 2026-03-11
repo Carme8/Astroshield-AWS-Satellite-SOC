@@ -34,6 +34,8 @@ Monitoraggio in tempo reale del flusso **VITA-49.2** per identificare anomalie c
 | **🖥️ Amazon EC2** | Istanza Hardened (SDR). Software Amphinicy Blink. | Elabora e salva su S3. |
 | **🗄️ Amazon S3** | Vault finale con **Object Lock** (Compliance Mode). | Impedisce il Data Tampering (WORM). |
 
+"L'architettura è progettata per essere Cloud-Agnostic e testabile localmente tramite LocalStack, riducendo i costi di R&D a zero, pur essendo pronta per il deployment immediato su infrastruttura AWS di produzione."
+
 ---
 
 ## 🎬 Demo Scripts: Astro-Shield in Azione
