@@ -46,10 +46,7 @@ In questa fase, la pipeline riceve dati in Banda X. Il segnale è autentico e i 
 
 <img width="1380" height="712" alt="Mission_Control_Nominal_State" src="https://github.com/user-attachments/assets/1716a8b5-9ec4-4321-a4c2-4fab3cab28ad" />
 
-
 https://github.com/user-attachments/assets/588707e7-d7ad-40b1-892e-e08336946bfa
-
-
 
 ### Scena 2: Rilevamento Attacco (Red Zone)
 Il sistema rileva un tentativo di hijacking orbitale tramite un picco anomalo di potenza (Power Spike).
