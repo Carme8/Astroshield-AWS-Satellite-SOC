@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Satellite Security Operations Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #04080f;
+    --bg-panel: #070d18;
+    --bg-card: #0a1628;
+    --bg-card2: #0d1f36;
+    --border: #1a3a5c;
+    --border-bright: #1e6fa8;
+    --aws-orange: #FF9900;
+    --aws-orange-dim: #c87700;
+    --aws-blue: #232F3E;
+    --aws-teal: #00A1C9;
+    --aws-green: #3F8624;
+    --aws-green-bright: #59b536;
+    --aws-red: #D13212;
+    --aws-purple: #8C4FFF;
+    --aws-yellow: #FFD700;
+    --text-primary: #e8f4ff;
+    --text-secondary: #7fb3d3;
+    --text-dim: #3d6a8a;
+    --glow-blue: rgba(0, 161, 201, 0.3);
+    --glow-orange: rgba(255, 153, 0, 0.3);
+    --glow-green: rgba(89, 181, 54, 0.3);
+    --glow-red: rgba(209, 50, 18, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(0,100,160,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(0,161,201,0.05) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(26,58,92,0.15) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(26,58,92,0.15) 40px);
+  }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px;
+    background: linear-gradient(90deg, #04080f 0%, #070d18 50%, #04080f 100%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--aws-teal), var(--aws-orange), var(--aws-teal), transparent);
+    opacity: 0.6;
+  }
+  .header-logo { display: flex; align-items: center; gap: 12px; }
+  .aws-badge {
+    background: var(--aws-orange); color: #000;
+    font-family: 'Orbitron', monospace; font-weight: 900; font-size: 11px;
+    padding: 3px 8px; letter-spacing: 1px;
+  }
+  .header-title {
+    font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: 2px;
+  }
+  .header-title span { color: var(--aws-teal); }
+  .header-status { display: flex; align-items: center; gap: 20px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-secondary);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+  .dot-green { background: var(--aws-green-bright); box-shadow: 0 0 6px var(--aws-green-bright); }
+  .dot-orange { background: var(--aws-orange); box-shadow: 0 0 6px var(--aws-orange); animation-delay: 0.5s; }
+  .dot-red { background: var(--aws-red); box-shadow: 0 0 6px var(--aws-red); animation-delay: 1s; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .header-time {
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    color: var(--aws-teal); border: 1px solid var(--border); padding: 4px 10px;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: 300px 1fr 280px;
+    grid-template-rows: auto auto;
+    padding: 12px; gap: 10px;
+    min-height: calc(100vh - 60px);
+  }
+
+  .panel {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    padding: 14px; position: relative; overflow: hidden;
+  }
+  .panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .panel-orange::before { background: linear-gradient(90deg, transparent, var(--aws-orange), transparent); }
+  .panel-blue::before   { background: linear-gradient(90deg, transparent, var(--aws-teal), transparent); }
+  .panel-green::before  { background: linear-gradient(90deg, transparent, var(--aws-green-bright), transparent); }
+  .panel-red::before    { background: linear-gradient(90deg, transparent, var(--aws-red), transparent); }
+  .panel-purple::before { background: linear-gradient(90deg, transparent, var(--aws-purple), transparent); }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+
+  .aws-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 3px; font-size: 10px; font-weight: 700;
+    font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px; white-space: nowrap;
+  }
+  .icon-ec2      { background: #ED7100; color: #fff; padding: 2px 6px; }
+  .icon-s3       { background: #3F8624; color: #fff; padding: 2px 6px; }
+  .icon-lambda   { background: #E87722; color: #fff; padding: 2px 6px; }
+  .icon-guardduty{ background: #D13212; color: #fff; padding: 2px 6px; }
+  .icon-kms      { background: #DD344C; color: #fff; padding: 2px 6px; }
+  .icon-iam      { background: #DD344C; color: #fff; padding: 2px 6px; }
+  .icon-vpc      { background: #8C4FFF; color: #fff; padding: 2px 6px; }
+  .icon-cw       { background: #E7157B; color: #fff; padding: 2px 6px; }
+  .icon-gs       { background: #01A88D; color: #fff; padding: 2px 6px; }
+  .icon-eni      { background: #8C4FFF; color: #fff; padding: 2px 6px; }
+  .icon-sns      { background: #E7157B; color: #fff; padding: 2px 6px; }
+  .icon-nat      { background: #8C4FFF; color: #fff; padding: 2px 6px; }
+  .icon-igw      { background: #8C4FFF; color: #fff; padding: 2px 6px; }
+  .icon-vpce     { background: #8C4FFF; color: #fff; padding: 2px 6px; }
+
+  .panel-left  { grid-column: 1; grid-row: 1 / 3; }
+  .panel-center{ grid-column: 2; grid-row: 1; }
+  .panel-sdr   { grid-column: 2; grid-row: 2; }
+  .panel-right { grid-column: 3; grid-row: 1 / 3; }
+
+  .forensic-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .guardduty-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(209,50,18,0.15); border: 1px solid rgba(209,50,18,0.4);
+    padding: 3px 8px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #ff6b4a;
+  }
+  .guardduty-icon {
+    width: 14px; height: 14px; background: var(--aws-red);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+  .anomaly-chart {
+    width: 100%; height: 70px; margin-bottom: 10px;
+    position: relative; background: rgba(10,22,40,0.8); border: 1px solid var(--border);
+  }
+  .anomaly-chart canvas { width: 100%; height: 100%; }
+  .chart-label {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim);
+    margin-bottom: 4px; display: flex; justify-content: space-between;
+  }
+  .chart-label span { color: var(--aws-teal); }
+  .lambda-note {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim);
+    background: rgba(232,119,34,0.08); border-left: 2px solid var(--aws-orange);
+    padding: 4px 6px; margin-top: 4px; margin-bottom: 10px;
+  }
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px;
+    background: var(--bg-card); border: 1px solid var(--border); margin-bottom: 5px;
+  }
+  .alert-sev {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px; font-weight: 700;
+    padding: 1px 4px; min-width: 28px; text-align: center;
+  }
+  .sev-low  { background: rgba(63,134,36,0.3);  color: var(--aws-green-bright); border: 1px solid var(--aws-green-bright); }
+  .sev-med  { background: rgba(255,153,0,0.2);  color: var(--aws-orange);       border: 1px solid var(--aws-orange); }
+  .sev-high { background: rgba(209,50,18,0.25); color: #ff6b4a;                 border: 1px solid var(--aws-red); }
+  .alert-text { font-size: 11px; color: var(--text-secondary); line-height: 1.3; }
+  .alert-time { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  .orbital-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .orbit-stat { background: var(--bg-card); border: 1px solid var(--border); padding: 8px; text-align: center; }
+  .orbit-stat-val { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; line-height: 1; }
+  .orbit-stat-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+
+  .flow-node { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 80px; position: relative; }
+  .flow-icon-wrap {
+    width: 52px; height: 52px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; font-size: 24px; transition: all 0.3s;
+  }
+  .flow-icon-wrap:hover { transform: scale(1.08); }
+  .node-satellite .flow-icon-wrap { background: rgba(0,161,201,0.1);  border: 1px solid var(--aws-teal);        box-shadow: 0 0 15px rgba(0,161,201,0.2); }
+  .node-gs        .flow-icon-wrap { background: rgba(1,168,141,0.12); border: 1px solid #01A88D;               box-shadow: 0 0 15px rgba(1,168,141,0.2); }
+  .node-s3        .flow-icon-wrap { background: rgba(63,134,36,0.1);  border: 1px solid var(--aws-green-bright); box-shadow: 0 0 15px rgba(63,134,36,0.2); }
+  .flow-label    { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-secondary); text-align: center; line-height: 1.3; }
+  .flow-sublabel { font-size: 8px; color: var(--text-dim); text-align: center; font-family: 'Share Tech Mono', monospace; }
+  .flow-arrow { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 40px; gap: 4px; }
+  .arrow-line {
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--border-bright), var(--aws-teal));
+    position: relative; overflow: hidden;
+  }
+  .arrow-line::after {
+    content: ''; position: absolute; top: -1px; left: -20px; width: 20px; height: 4px;
+    background: rgba(255,255,255,0.8); animation: flowPacket 2s linear infinite; box-shadow: 0 0 8px var(--aws-teal);
+  }
+  @keyframes flowPacket { 0%{left:-20px;opacity:0;} 10%{opacity:1;} 90%{opacity:1;} 100%{left:calc(100% + 20px);opacity:0;} }
+  .arrow-proto { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--aws-teal); }
+  .delay1::after { animation-delay: 0s; }
+  .delay2::after { animation-delay: 0.7s; }
+
+  .worm-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,215,0,0.15); border: 1px solid var(--aws-yellow);
+    padding: 2px 6px; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--aws-yellow); margin-top: 4px;
+  }
+  .worm-dot { width: 6px; height: 6px; background: var(--aws-yellow); border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; }
+
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .metric-box { background: var(--bg-card); border: 1px solid var(--border); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .metric-val { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; line-height: 1; }
+  .metric-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; }
+  .metric-sub { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); }
+
+  .sdr-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sdr-wave { background: var(--bg-card); border: 1px solid var(--border); padding: 10px; position: relative; overflow: hidden; }
+  .sdr-title { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--aws-teal); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .sdr-canvas-wrap { height: 60px; position: relative; }
+  canvas { display: block; }
+
+  .vita-info { background: var(--bg-card2); border: 1px solid var(--border); padding: 10px; }
+  .vita-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; border-bottom: 1px solid rgba(26,58,92,0.5);
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  }
+  .vita-row:last-child { border-bottom: none; }
+  .vita-key { color: var(--text-dim); }
+  .vita-val { color: var(--text-primary); }
+  .vita-val.active { color: var(--aws-green-bright); }
+  .vita-val.orange { color: var(--aws-orange); }
+
+  .iac-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .python-badge { background: #3776AB; color: #FFD343; font-family: 'Share Tech Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; display: flex; align-items: center; gap: 3px; }
+  .cdk-badge { background: rgba(255,153,0,0.15); border: 1px solid var(--aws-orange); color: var(--aws-orange); font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 6px; }
+
+  .zt-section { margin-bottom: 12px; }
+  .zt-title { font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .zt-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: var(--bg-card); border: 1px solid var(--border); margin-bottom: 5px; }
+  .zt-item:hover { border-color: var(--border-bright); }
+  .zt-icon-box { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; border-radius: 3px; flex-shrink: 0; }
+  .zt-icon-kms { background: rgba(221,52,76,0.15); border: 1px solid rgba(221,52,76,0.4); }
+  .zt-icon-iam { background: rgba(221,52,76,0.15); border: 1px solid rgba(221,52,76,0.4); }
+  .zt-icon-vpc { background: rgba(140,79,255,0.15); border: 1px solid rgba(140,79,255,0.4); }
+  .zt-icon-sg  { background: rgba(255,153,0,0.1);  border: 1px solid rgba(255,153,0,0.35); }
+  .zt-icon-ct  { background: rgba(0,161,201,0.1);  border: 1px solid rgba(0,161,201,0.35); }
+  .zt-info { flex: 1; }
+  .zt-name { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 12px; line-height: 1.2; }
+  .zt-desc { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+  .zt-status { font-family: 'Share Tech Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 5px; }
+  .status-active   { color: var(--aws-green-bright); background: rgba(89,181,54,0.1);  border: 1px solid rgba(89,181,54,0.3); }
+  .status-enforced { color: var(--aws-orange);       background: rgba(255,153,0,0.1);  border: 1px solid rgba(255,153,0,0.3); }
+
+  .compliance-bar { margin-top: 10px; }
+  .cbar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .cbar-lbl { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); min-width: 40px; }
+  .cbar-track { flex: 1; height: 6px; background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .cbar-fill { height: 100%; background: linear-gradient(90deg, var(--aws-teal), var(--aws-green-bright)); position: relative; }
+  .cbar-fill::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 4px; background: rgba(255,255,255,0.6); animation: shimmer 2s ease-in-out infinite; }
+  @keyframes shimmer { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+  .cbar-pct { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--aws-green-bright); min-width: 28px; text-align: right; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  #attackBanner {
+    display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(90deg, #1a0000, #cc0000, #1a0000);
+    border-bottom: 2px solid #ff3131; padding: 8px 24px;
+    font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+    color: #fff; letter-spacing: 3px; text-align: center;
+    animation: bannerPulse 0.8s ease-in-out infinite;
+    box-shadow: 0 0 30px rgba(255,49,49,0.6);
+  }
+  #attackBanner.active { display: block; }
+  @keyframes bannerPulse { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+
+  #attackStatus {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    margin-bottom: 10px; border: 1px solid; font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; transition: all 0.4s;
+  }
+  #attackStatus.safe   { background: rgba(89,181,54,0.1); border-color: rgba(89,181,54,0.4); color: var(--aws-green-bright); }
+  #attackStatus.attack { background: rgba(255,49,49,0.15); border-color: #ff3131; color: #ff6b6b; animation: statusPulse 0.6s ease-in-out infinite; }
+  @keyframes statusPulse { 0%,100%{background:rgba(255,49,49,0.15);} 50%{background:rgba(255,49,49,0.3);} }
+  #attackStatusDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  #attackStatus.safe   #attackStatusDot { background: var(--aws-green-bright); box-shadow: 0 0 8px var(--aws-green-bright); }
+  #attackStatus.attack #attackStatusDot { background: #ff3131; box-shadow: 0 0 12px #ff3131; animation: dotBlink 0.5s ease-in-out infinite; }
+  @keyframes dotBlink { 0%,100%{opacity:1;} 50%{opacity:0.1;} }
+
+  #attackLog { max-height: 90px; overflow-y: auto; background: rgba(5,0,0,0.5); border: 1px solid rgba(255,49,49,0.2); padding: 4px 6px; margin-bottom: 10px; }
+  .log-entry { font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 0; border-bottom: 1px solid rgba(26,58,92,0.3); display: flex; gap: 8px; }
+  .log-time  { color: var(--text-dim); min-width: 55px; }
+  .log-attack { color: #ff6b6b; }
+  .log-safe   { color: var(--aws-green-bright); }
+
+  .satellite-svg { animation: satFloat 4s ease-in-out infinite; }
+  @keyframes satFloat { 0%,100%{transform:translateY(-1px);} 50%{transform:translateY(1px);} }
+  .sat-blink { animation: satBlink 1.5s ease-in-out infinite; }
+  @keyframes satBlink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+  .az-container { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .az-box { border: 1px dashed; border-radius: 3px; padding: 8px; position: relative; }
+  .az-box-a { border-color: rgba(255,153,0,0.4);  background: rgba(255,153,0,0.03); }
+  .az-box-b { border-color: rgba(0,161,201,0.4);  background: rgba(0,161,201,0.03); }
+  .az-label { font-family: 'Share Tech Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: 1px; position: absolute; top: -7px; left: 8px; padding: 0 4px; background: var(--bg-panel); }
+  .az-label-a { color: var(--aws-orange); }
+  .az-label-b { color: var(--aws-teal); }
+  .subnet-tag { display: inline-flex; align-items: center; gap: 3px; font-family: 'Share Tech Mono', monospace; font-size: 8px; padding: 1px 5px; margin-bottom: 6px; border-radius: 2px; }
+  .subnet-public  { background: rgba(89,181,54,0.15); border: 1px solid rgba(89,181,54,0.4);   color: var(--aws-green-bright); }
+  .subnet-private { background: rgba(0,161,201,0.1);  border: 1px solid rgba(0,161,201,0.35); color: var(--aws-teal); }
+  .az-node { display: flex; align-items: center; gap: 6px; padding: 5px 6px; background: var(--bg-card); border: 1px solid var(--border); margin-bottom: 4px; cursor: default; }
+  .az-node:hover { border-color: var(--border-bright); }
+  .az-node-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 2px; flex-shrink: 0; }
+  .az-node-info { flex: 1; }
+  .az-node-name { font-family: 'Rajdhani',sans-serif; font-weight:600; font-size:11px; line-height:1.2; }
+  .az-node-desc { font-family: 'Share Tech Mono',monospace; font-size:8px; color:var(--text-dim); }
+  .region-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(0,161,201,0.08); border: 1px solid rgba(0,161,201,0.3); padding: 2px 8px; font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--aws-teal); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ATTACK BANNER (visibile solo durante attacco) -->
+<div id="attackBanner">⚠ CYBER ATTACK DETECTED — GUARDDUTY ALERT ACTIVE — LAMBDA DEFENSE TRIGGERED ⚠</div>
+
+<div class="header">
+  <div class="header-logo">
+    <div class="aws-badge">AWS</div>
+    <div class="header-title">SATELLITE <span>SECURITY OPS</span> CENTER</div>
+  </div>
+  <div class="header-status">
+    <div class="status-pill"><div class="status-dot dot-green"></div>EC2 RUNNING</div>
+    <div class="status-pill"><div class="status-dot dot-orange"></div>PASS IN PROGRESS</div>
+    <div class="status-pill"><div class="status-dot dot-red"></div>2 ALERTS</div>
+    <div class="header-time" id="clock">--:--:-- UTC</div>
+  </div>
+</div>
+
+<div class="dashboard">
+
+  <!-- LEFT: AI-DRIVEN SECURITY -->
+  <div class="panel panel-red panel-left">
+    <div class="panel-title" style="color:#ff6b4a;">
+      <div class="panel-title-icon">🛡</div>AI-DRIVEN SECURITY
+    </div>
+    <div class="forensic-header">
+      <div class="guardduty-badge"><div class="guardduty-icon"></div>AMAZON GUARDDUTY</div>
+      <span class="aws-icon icon-lambda" style="font-size:9px;">λ LAMBDA</span>
+    </div>
+
+    <!-- STATO ATTACCO IN TEMPO REALE -->
+    <div id="attackStatus" class="safe">
+      <div id="attackStatusDot"></div>
+      <div id="attackStatusText">● SISTEMA SICURO — Nessun attacco rilevato</div>
+    </div>
+
+    <!-- LOG ATTACCHI -->
+    <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px;">THREAT LOG</div>
+    <div id="attackLog"></div>
+    <div class="chart-label">RF POWER CONSUMPTION <span id="rfVal">-12.4 dBm</span></div>
+    <div class="anomaly-chart"><canvas id="rfChart" width="270" height="68"></canvas></div>
+    <div class="lambda-note">⚙ Analyzed by Lambda via CloudWatch Events</div>
+    <div class="chart-label">TLE ORBITAL DEVIATION <span id="tleVal">0.003°</span></div>
+    <div class="anomaly-chart"><canvas id="tleChart" width="270" height="68"></canvas></div>
+    <div class="lambda-note" style="border-color:#8C4FFF;background:rgba(140,79,255,0.06);">⚙ GuardDuty → SNS → Lambda escalation</div>
+    <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px;">ACTIVE FINDINGS</div>
+    <div class="alert-item">
+      <div class="alert-sev sev-high">HIGH</div>
+      <div><div class="alert-text">Unauthorized API call from EC2 instance i-0a3f8b2c</div><div class="alert-time">2026-03-04 17:14:32Z · GuardDuty:UnauthorizedAccess</div></div>
+    </div>
+    <div class="alert-item">
+      <div class="alert-sev sev-med">MED</div>
+      <div><div class="alert-text">S3 bucket policy deviation — Object Lock tamper attempt</div><div class="alert-time">2026-03-04 16:55:01Z · GuardDuty:S3/AnomalousBehavior</div></div>
+    </div>
+    <div class="alert-item">
+      <div class="alert-sev sev-low">LOW</div>
+      <div><div class="alert-text">Unusual CloudTrail log pattern detected in VPC flow</div><div class="alert-time">2026-03-04 16:30:18Z · GuardDuty:Recon/EC2</div></div>
+    </div>
+    <div class="orbital-stats">
+      <div class="orbit-stat"><div class="orbit-stat-val" style="color:var(--aws-teal);">847</div><div class="orbit-stat-lbl">Events/hr</div></div>
+      <div class="orbit-stat"><div class="orbit-stat-val" style="color:var(--aws-orange);">3</div><div class="orbit-stat-lbl">Active Findings</div></div>
+      <div class="orbit-stat"><div class="orbit-stat-val" style="color:var(--aws-green-bright);">99.7%</div><div class="orbit-stat-lbl">ML Accuracy</div></div>
+      <div class="orbit-stat"><div class="orbit-stat-val" style="color:var(--aws-green-bright);font-size:18px;">0</div><div class="orbit-stat-lbl">Breaches</div></div>
+    </div>
+  </div>
+
+  <!-- CENTER TOP: DATA INGESTION PIPELINE -->
+  <div class="panel panel-blue panel-center">
+    <div class="panel-title" style="color:var(--aws-teal);">
+      <div class="panel-title-icon">📡</div>DATA INGESTION PIPELINE — X-BAND · VITA-49.2/UDP · 7 Gbps
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div class="region-badge">
+        <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" stroke-width="0.8"/><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="0.8"/></svg>
+        AWS Region: eu-central-1 (Frankfurt)
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+        <div class="flow-node node-satellite" style="min-width:60px;">
+          <div class="flow-icon-wrap" style="width:44px;height:44px;">
+            <svg width="32" height="32" viewBox="0 0 36 36" class="satellite-svg">
+              <rect x="13" y="13" width="10" height="10" fill="#00A1C9" rx="1"/>
+              <rect x="1" y="15" width="10" height="6" fill="#1a3a5c" stroke="#00A1C9" stroke-width="0.5"/>
+              <rect x="25" y="15" width="10" height="6" fill="#1a3a5c" stroke="#00A1C9" stroke-width="0.5"/>
+              <line x1="18" y1="13" x2="18" y2="6" stroke="#00A1C9" stroke-width="1.5"/>
+              <circle cx="18" cy="5" r="2" fill="none" stroke="#00A1C9" stroke-width="1"/>
+              <circle cx="18" cy="5" r="1.2" fill="#00A1C9" class="sat-blink"/>
+            </svg>
+          </div>
+          <div class="flow-label">Satellite SNPP</div>
+          <div class="flow-sublabel">350 MHz</div>
+        </div>
+        <div class="flow-arrow" style="min-width:30px;">
+          <div class="arrow-line delay1"></div>
+          <div class="arrow-proto">350MHz</div>
+        </div>
+        <div class="flow-node node-gs" style="min-width:70px;">
+          <div class="flow-icon-wrap" style="width:44px;height:44px;">
+            <svg width="32" height="32" viewBox="0 0 36 36">
+              <circle cx="18" cy="22" r="12" fill="rgba(1,168,141,0.15)" stroke="#01A88D" stroke-width="1.5"/>
+              <path d="M10 24 Q18 14 26 24" fill="rgba(1,168,141,0.3)" stroke="#01A88D" stroke-width="1.5"/>
+              <line x1="18" y1="24" x2="18" y2="30" stroke="#01A88D" stroke-width="2"/>
+              <line x1="14" y1="30" x2="22" y2="30" stroke="#01A88D" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="flow-label">AWS Ground<br>Station</div>
+          <div class="flow-sublabel" style="color:#01A88D;">X-Band</div>
+        </div>
+        <div class="flow-arrow" style="min-width:30px;">
+          <div class="arrow-line delay2"></div>
+          <div class="arrow-proto">into VPC</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="border:1px dashed rgba(140,79,255,0.5);border-radius:4px;padding:8px;background:rgba(140,79,255,0.02);position:relative;margin-bottom:10px;">
+      <div style="position:absolute;top:-8px;left:10px;background:var(--bg-panel);padding:0 5px;font-family:'Share Tech Mono',monospace;font-size:8px;color:#8C4FFF;letter-spacing:1px;">⬡ Amazon VPC — Private Cloud</div>
+      <div class="az-container">
+        <div class="az-box az-box-a">
+          <div class="az-label az-label-a">AZ-A (eu-central-1a)</div>
+          <div class="subnet-tag subnet-public">🔓 Public Subnet</div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(140,79,255,0.15);border:1px solid rgba(140,79,255,0.4);">🌐</div>
+            <div class="az-node-info"><div class="az-node-name">Internet Gateway</div><div class="az-node-desc">Inbound X-Band traffic</div></div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--aws-green-bright);">● UP</div>
+          </div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(255,153,0,0.12);border:1px solid rgba(255,153,0,0.4);">
+              <svg width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="#FF9900" stroke-width="1.5"/><path d="M6 10 L14 10 M10 6 L10 14" stroke="#FF9900" stroke-width="1.5"/><circle cx="10" cy="10" r="2" fill="#FF9900"/></svg>
+            </div>
+            <div class="az-node-info"><div class="az-node-name">NAT Gateway</div><div class="az-node-desc">Auto-scaling · Elastic IP</div></div>
+            <span class="aws-icon icon-nat" style="font-size:8px;">NAT</span>
+          </div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(140,79,255,0.1);border:1px solid rgba(140,79,255,0.4);">🔌</div>
+            <div class="az-node-info"><div class="az-node-name">ENI · Elastic IP</div><div class="az-node-desc">VITA-49.2/UDP ingress</div></div>
+            <span class="aws-icon icon-eni" style="font-size:8px;">ENI</span>
+          </div>
+        </div>
+        <div class="az-box az-box-b">
+          <div class="az-label az-label-b">AZ-B (eu-central-1b)</div>
+          <div class="subnet-tag subnet-private">🔒 Private Subnet</div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(237,113,0,0.12);border:1px solid rgba(237,113,0,0.4);">
+              <svg width="16" height="16" viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="14" rx="1" fill="none" stroke="#ED7100" stroke-width="1.5"/><line x1="2" y1="8" x2="18" y2="8" stroke="#ED7100" stroke-width="0.8"/><circle cx="15" cy="5.5" r="1" fill="#59b536"/></svg>
+            </div>
+            <div class="az-node-info"><div class="az-node-name">EC2 · Receiver &amp; SDR</div><div class="az-node-desc">GS Agent · Amphinicy Blink</div></div>
+            <span class="aws-icon icon-ec2" style="font-size:8px;">EC2</span>
+          </div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(237,113,0,0.1);border:1px solid rgba(237,113,0,0.3);">📊</div>
+            <div class="az-node-info"><div class="az-node-name">DataProcessor EC2</div><div class="az-node-desc">i3en.large · VITA decode</div></div>
+            <span class="aws-icon icon-ec2" style="font-size:8px;">EC2</span>
+          </div>
+          <div class="az-node">
+            <div class="az-node-icon" style="background:rgba(0,161,201,0.1);border:1px solid rgba(0,161,201,0.35);">🔗</div>
+            <div class="az-node-info"><div class="az-node-name">VPC Endpoint</div><div class="az-node-desc">S3 · KMS · no IGW egress</div></div>
+            <span class="aws-icon icon-vpce" style="font-size:8px;">VPCE</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:rgba(63,134,36,0.05);border:1px solid rgba(63,134,36,0.25);border-radius:3px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);">VPC ENDPOINT →</div>
+        <div class="flow-node node-s3" style="min-width:50px;flex-direction:row;gap:8px;">
+          <div class="flow-icon-wrap" style="width:36px;height:36px;">
+            <svg width="28" height="28" viewBox="0 0 36 36">
+              <path d="M8 10 Q18 6 28 10 L26 30 Q18 34 10 30 Z" fill="rgba(63,134,36,0.15)" stroke="#59b536" stroke-width="1.5"/>
+              <path d="M8 10 Q18 14 28 10" fill="none" stroke="#59b536" stroke-width="1.5"/>
+              <text x="18" y="24" text-anchor="middle" fill="#59b536" font-size="8" font-family="monospace" font-weight="bold">S3</text>
+            </svg>
+          </div>
+          <div>
+            <div class="flow-label" style="text-align:left;">Amazon S3 Raw Archive</div>
+            <div class="worm-badge"><div class="worm-dot"></div>WORM / Object Lock ACTIVE</div>
+          </div>
+        </div>
+        <div style="margin-left:auto;"><span class="aws-icon icon-kms" style="font-size:8px;">🔑 KMS</span></div>
+      </div>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric-box"><div class="metric-val" style="color:var(--aws-teal);">7.0</div><div class="metric-lbl">Gbps Throughput</div><div class="metric-sub">↑ X-Band downlink</div></div>
+      <div class="metric-box"><div class="metric-val" style="color:var(--aws-orange);">2</div><div class="metric-lbl">Active Contacts</div><div class="metric-sub">Next in 00:14:22</div></div>
+      <div class="metric-box"><div class="metric-val" style="color:var(--aws-green-bright);">4.7</div><div class="metric-lbl">TB Ingested</div><div class="metric-sub">This pass · S3 WORM</div></div>
+      <div class="metric-box"><div class="metric-val" style="color:#8C4FFF;">99.8%</div><div class="metric-lbl">Packet Integrity</div><div class="metric-sub">VITA-49.2 validated</div></div>
+    </div>
+  </div>
+
+  <!-- CENTER BOTTOM: SDR STREAM -->
+  <div class="panel panel-purple panel-sdr">
+    <div class="panel-title" style="color:#8C4FFF;">
+      <div class="panel-title-icon">📻</div>SDR STREAM (AMPHINICY BLINK) — SOFTWARE DEFINED RADIO · REAL-TIME SIGNAL PROCESSING
+    </div>
+    <div class="sdr-wrap">
+      <div>
+        <div class="sdr-wave">
+          <div class="sdr-title"><span>RF WAVEFORM · 350 MHz</span><span style="color:var(--aws-green-bright);">● LIVE</span></div>
+          <div class="sdr-canvas-wrap"><canvas id="waveCanvas" width="240" height="56"></canvas></div>
+        </div>
+        <div class="sdr-wave" style="margin-top:6px;">
+          <div class="sdr-title"><span>SPECTRUM WATERFALL</span><span style="color:var(--aws-orange);">X-Band</span></div>
+          <div class="sdr-canvas-wrap"><canvas id="spectCanvas" width="240" height="56"></canvas></div>
+        </div>
+      </div>
+      <div class="vita-info">
+        <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;color:#8C4FFF;margin-bottom:8px;">VITA-49.2 STREAM STATUS</div>
+        <div class="vita-row"><span class="vita-key">PROTOCOL</span><span class="vita-val orange">VITA-49.2/UDP</span></div>
+        <div class="vita-row"><span class="vita-key">FREQUENCY</span><span class="vita-val">8.025 GHz</span></div>
+        <div class="vita-row"><span class="vita-key">SAMPLE RATE</span><span class="vita-val">25 MSPS</span></div>
+        <div class="vita-row"><span class="vita-key">BANDWIDTH</span><span class="vita-val">20 MHz</span></div>
+        <div class="vita-row"><span class="vita-key">MODULATION</span><span class="vita-val">QPSK</span></div>
+        <div class="vita-row"><span class="vita-key">SDR ENGINE</span><span class="vita-val active">BLINK · ACTIVE</span></div>
+        <div class="vita-row"><span class="vita-key">DEMOD</span><span class="vita-val active">● LOCKED</span></div>
+        <div class="vita-row"><span class="vita-key">BER</span><span class="vita-val" style="color:var(--aws-green-bright);">1.2×10⁻⁸</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: INFRASTRUCTURE SECURITY -->
+  <div class="panel panel-orange panel-right">
+    <div class="panel-title" style="color:var(--aws-orange);">
+      <div class="panel-title-icon">🔒</div>INFRASTRUCTURE SECURITY
+    </div>
+    <div class="iac-header">
+      <div class="python-badge">🐍 Python</div>
+      <div class="cdk-badge">AWS CDK</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);">IaC · 100% Code</div>
+    </div>
+    <div class="zt-section">
+      <div class="zt-title">⊘ ZERO TRUST ARCHITECTURE</div>
+      <div class="zt-item"><div class="zt-icon-box zt-icon-kms">🔑</div><div class="zt-info"><div class="zt-name">AWS KMS</div><div class="zt-desc">CMK · AES-256-GCM · Auto-rotate 90d</div></div><div class="zt-status status-active">ACTIVE</div></div>
+      <div class="zt-item"><div class="zt-icon-box zt-icon-iam">🪪</div><div class="zt-info"><div class="zt-name">AWS IAM</div><div class="zt-desc">Least-privilege · SCP · Permission boundary</div></div><div class="zt-status status-active">ACTIVE</div></div>
+      <div class="zt-item"><div class="zt-icon-box zt-icon-vpc">☁</div><div class="zt-info"><div class="zt-name">Amazon VPC</div><div class="zt-desc">Private subnet · No IGW · VPC Endpoints</div></div><div class="zt-status status-active">ISOLATED</div></div>
+      <div class="zt-item"><div class="zt-icon-box zt-icon-sg">🛡</div><div class="zt-info"><div class="zt-name">Security Groups</div><div class="zt-desc">Deny-all default · Whitelist VITA-49.2</div></div><div class="zt-status status-enforced">ENFORCED</div></div>
+      <div class="zt-item"><div class="zt-icon-box zt-icon-ct">📋</div><div class="zt-info"><div class="zt-name">CloudTrail</div><div class="zt-desc">All regions · S3 WORM · Integrity hash</div></div><div class="zt-status status-active">LOGGING</div></div>
+      <div class="zt-item"><div class="zt-icon-box" style="background:rgba(0,161,201,0.1);border:1px solid rgba(0,161,201,0.35);">🔗</div><div class="zt-info"><div class="zt-name">VPC Endpoint (S3/KMS)</div><div class="zt-desc">Private link · no IGW egress · PrivateLink</div></div><div class="zt-status status-active">ACTIVE</div></div>
+      <div class="zt-item"><div class="zt-icon-box" style="background:rgba(255,153,0,0.1);border:1px solid rgba(255,153,0,0.3);">📣</div><div class="zt-info"><div class="zt-name">Amazon SNS</div><div class="zt-desc">GuardDuty alerts → Lambda escalation</div></div><div class="zt-status status-active">SUBSCRIBED</div></div>
+    </div>
+    <div class="zt-title">◈ COMPLIANCE POSTURE</div>
+    <div class="compliance-bar">
+      <div class="cbar-row"><div class="cbar-lbl">NIST</div><div class="cbar-track"><div class="cbar-fill" style="width:94%"></div></div><div class="cbar-pct">94%</div></div>
+      <div class="cbar-row"><div class="cbar-lbl">CIS</div><div class="cbar-track"><div class="cbar-fill" style="width:97%"></div></div><div class="cbar-pct">97%</div></div>
+      <div class="cbar-row"><div class="cbar-lbl">SOC2</div><div class="cbar-track"><div class="cbar-fill" style="width:91%"></div></div><div class="cbar-pct">91%</div></div>
+      <div class="cbar-row"><div class="cbar-lbl">PCI</div><div class="cbar-track"><div class="cbar-fill" style="width:88%;background:linear-gradient(90deg,var(--aws-orange),#ffcc44)"></div></div><div class="cbar-pct" style="color:var(--aws-orange);">88%</div></div>
+    </div>
+    <div style="margin-top:12px;padding:8px;background:var(--bg-card);border:1px solid var(--border);">
+      <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">EVENT AUTOMATION FLOW</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);margin-bottom:3px;">① CONTACT TRIGGER</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+        <span class="aws-icon icon-gs" style="font-size:8px;">GS CONTACT</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-cw" style="font-size:8px;">☁ CLOUDWATCH</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-lambda" style="font-size:8px;">λ LAMBDA</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-ec2" style="font-size:8px;">⬛ EC2 START</span>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);margin-bottom:3px;">② SECURITY ALERT (Telemetry)</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+        <span class="aws-icon icon-guardduty" style="font-size:8px;">⬡ GUARDDUTY</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-cw" style="font-size:8px;">☁ CLOUDWATCH</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-sns" style="font-size:8px;">📣 SNS</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-lambda" style="font-size:8px;">λ DEFENSE</span>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);margin-bottom:3px;">③ FORENSICS &amp; CLEANUP</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+        <span class="aws-icon icon-lambda" style="font-size:8px;">λ LAMBDA</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-ec2" style="font-size:8px;">🔍 SecurityResponder</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--aws-green-bright);">tag=COMPLETE</span><span style="color:var(--text-dim);font-size:10px;">→</span>
+        <span class="aws-icon icon-s3" style="font-size:8px;">🪣 S3</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:#020b14;border:1px solid var(--border);padding:8px;font-family:'Share Tech Mono',monospace;font-size:9px;line-height:1.6;overflow:hidden;">
+      <div style="color:var(--text-dim);margin-bottom:4px;"># Python CDK — KMS key definition</div>
+      <div><span style="color:#8C4FFF;">key</span> <span style="color:var(--text-dim);">=</span> <span style="color:var(--aws-teal);">kms</span><span style="color:var(--text-dim);">.</span><span style="color:var(--aws-orange);">Key</span>(self, <span style="color:var(--aws-green-bright);">"SatKey"</span>,</div>
+      <div style="padding-left:12px;"><span style="color:var(--text-secondary);">enable_key_rotation</span>=<span style="color:var(--aws-orange);">True</span>,</div>
+      <div style="padding-left:12px;"><span style="color:var(--text-secondary);">pending_window</span>=<span style="color:var(--aws-teal);">Duration</span>.days(<span style="color:var(--aws-green-bright);">7</span>))</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clock').textContent = hh + ':' + mm + ':' + ss + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── CHART HELPERS ──
+function drawLineChart(canvas, color, noiseAmp, baseY, anomalyAt) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const pts = 80;
+  let data = Array.from({length: pts}, (_,i) => {
+    let v = baseY + (Math.random() - 0.5) * noiseAmp;
+    if (anomalyAt && Math.abs(i - anomalyAt) < 5) v += noiseAmp * 2.5;
+    return v;
+  });
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(26,58,92,0.4)'; ctx.lineWidth = 0.5;
+    for (let y = 0; y < h; y += 16) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.beginPath();
+    data.forEach((v, i) => { const x=(i/(pts-1))*w, y=h/2+v; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, color+'50'); grad.addColorStop(1, color+'05');
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.beginPath();
+    data.forEach((v, i) => { const x=(i/(pts-1))*w, y=h/2+v; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+    if (anomalyAt) {
+      const ax = (anomalyAt/(pts-1))*w;
+      ctx.beginPath(); ctx.moveTo(ax,0); ctx.lineTo(ax,h);
+      ctx.strokeStyle='#D13212'; ctx.lineWidth=1; ctx.setLineDash([2,2]); ctx.stroke(); ctx.setLineDash([]);
+    }
+    data.shift(); data.push(baseY + (Math.random()-0.5)*noiseAmp);
+  }
+  setInterval(draw, 80);
+}
+drawLineChart(document.getElementById('rfChart'),  '#00A1C9', 10, 0, 55);
+drawLineChart(document.getElementById('tleChart'), '#8C4FFF', 6,  0, 35);
+
+// ── SDR WAVEFORM ──
+function drawWaveform() {
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  let phase = 0;
+  function draw() {
+    ctx.clearRect(0,0,w,h); ctx.beginPath();
+    for (let x=0; x<w; x++) {
+      const t=x/w, y=h/2+Math.sin(t*Math.PI*24+phase)*14+Math.sin(t*Math.PI*7+phase*0.7)*5+(Math.random()-0.5)*2;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    const grad=ctx.createLinearGradient(0,0,w,0);
+    grad.addColorStop(0,'rgba(140,79,255,0.5)'); grad.addColorStop(0.5,'rgba(0,161,201,0.9)'); grad.addColorStop(1,'rgba(140,79,255,0.5)');
+    ctx.strokeStyle=grad; ctx.lineWidth=1.5; ctx.stroke(); phase+=0.08;
+  }
+  setInterval(draw, 40);
+}
+drawWaveform();
+
+// ── SPECTRUM WATERFALL ──
+function drawSpectrum() {
+  const canvas = document.getElementById('spectCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const rows = [];
+  function genRow() {
+    const row=new Uint8Array(w), cb=Math.floor(w*0.5);
+    for(let i=0;i<w;i++){const d=Math.abs(i-cb),s=Math.max(0,180-d*1.8+(Math.random()-0.5)*40);row[i]=Math.min(255,s);}
+    return row;
+  }
+  function draw() {
+    rows.unshift(genRow()); if(rows.length>h)rows.pop();
+    ctx.clearRect(0,0,w,h);
+    rows.forEach((row,y)=>row.forEach((val,x)=>{const a=val/255;if(a<0.05)return;ctx.fillStyle=`hsla(${200+(1-a)*60},80%,${40+a*40}%,${a*0.9})`;ctx.fillRect(x,y,1,1);}));
+  }
+  setInterval(draw, 120);
+}
+drawSpectrum();
+
+// ── BRIDGE: rfVal / tleVal dal server Python + allarme visivo ──
+// (unico intervallo — sostituisce i valori statici quando il bridge è attivo)
+let lastAttackState = null;
+
+function addLogEntry(isAttack, rf, tle) {
+  const log = document.getElementById('attackLog');
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + (isAttack ? 'log-attack' : 'log-safe');
+  entry.innerHTML = `<span class="log-time">${time}</span><span>${isAttack ? '⚠ ATTACCO  RF:'+rf+' TLE:'+tle : '✔ SICURO    RF:'+rf+' TLE:'+tle}</span>`;
+  log.insertBefore(entry, log.firstChild);
+  // Mantieni max 20 voci
+  while (log.children.length > 20) log.removeChild(log.lastChild);
+}
+
+async function updateDashboard() {
+  try {
+    const res = await fetch('http://localhost:5000/stats');
+    const data = await res.json();
+
+    const rf  = data.rf_power;
+    const tle = data.orbital_drift;
+    const isAttack = data.is_attack;
+
+    // Aggiorna valori
+    document.getElementById('rfVal').innerText  = rf  + " dBm";
+    document.getElementById('tleVal').innerText = tle + "°";
+
+    // Aggiorna status box
+    const statusBox  = document.getElementById('attackStatus');
+    const statusText = document.getElementById('attackStatusText');
+    const banner     = document.getElementById('attackBanner');
+    const panel      = document.querySelector('.panel-left');
+
+    if (isAttack) {
+      statusBox.className  = 'attack';
+      statusText.innerText = '⚠ ATTACCO IN CORSO — GuardDuty ha rilevato una minaccia!';
+      banner.classList.add('active');
+      panel.style.borderColor = '#ff3131';
+      panel.style.boxShadow   = '0 0 20px rgba(255,49,49,0.5)';
+      // Fai lampeggiare l'header
+      document.querySelector('.header').style.borderBottomColor = '#ff3131';
+    } else {
+      statusBox.className  = 'safe';
+      statusText.innerText = '● SISTEMA SICURO — Nessun attacco rilevato';
+      banner.classList.remove('active');
+      panel.style.borderColor = 'var(--border)';
+      panel.style.boxShadow   = 'none';
+      document.querySelector('.header').style.borderBottomColor = '';
+    }
+
+    // Aggiungi al log solo se lo stato è cambiato
+    if (lastAttackState !== isAttack) {
+      addLogEntry(isAttack, rf, tle);
+      lastAttackState = isAttack;
+    }
+
+  } catch (e) { console.log("Bridge non connesso — valori simulati attivi"); }
+}
+setInterval(updateDashboard, 2000);
+</script>
+</body>
+</html>
