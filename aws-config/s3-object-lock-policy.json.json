@@ -1,0 +1,17 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowS3SecureUploadOnly",
+            "Effect": "Allow",
+            "Action": ["s3:PutObject"],
+            "Resource": "arn:aws:s3:::astro-shield-vault/*"
+        },
+        {
+            "Sid": "ExplicitDenyDelete",
+            "Effect": "Deny",
+            "Action": ["s3:DeleteObject*"],
+            "Resource": "arn:aws:s3:::astro-shield-vault/*"
+        }
+    ]
+}
